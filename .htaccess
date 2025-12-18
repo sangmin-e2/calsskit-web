@@ -1,0 +1,62 @@
+# Apache 서버용 설정 파일
+# SPA 라우팅을 위한 fallback 설정
+
+# index.html을 우선적으로 로드하도록 설정
+DirectoryIndex index.html index.php index.htm
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  
+  # 실제 파일이나 디렉토리가 존재하면 그대로 서빙
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  
+  # 그 외의 모든 요청을 index.html로 리다이렉트 (SPA 라우팅)
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+# 보안 헤더 설정
+<IfModule mod_headers.c>
+  # XSS 보호
+  Header set X-XSS-Protection "1; mode=block"
+  # MIME 타입 스니핑 방지
+  Header set X-Content-Type-Options "nosniff"
+  # 클릭재킹 방지
+  Header set X-Frame-Options "SAMEORIGIN"
+  # HTML 파일 캐시 방지
+  <FilesMatch "\.(html|htm)$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+  </FilesMatch>
+</IfModule>
+
+# 캐싱 설정
+<IfModule mod_expires.c>
+  ExpiresActive On
+  # 이미지, 폰트 등 정적 자산은 1년간 캐싱
+  ExpiresByType image/jpeg "access plus 1 year"
+  ExpiresByType image/png "access plus 1 year"
+  ExpiresByType image/gif "access plus 1 year"
+  ExpiresByType image/svg+xml "access plus 1 year"
+  ExpiresByType font/woff2 "access plus 1 year"
+  ExpiresByType font/woff "access plus 1 year"
+  ExpiresByType application/javascript "access plus 1 month"
+  ExpiresByType text/css "access plus 1 month"
+  # HTML은 캐싱하지 않음
+  ExpiresByType text/html "access plus 0 seconds"
+</IfModule>
+
+# Gzip 압축 설정
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+</IfModule>
+
+
+
+# 민감한 파일 접근 차단
+<FilesMatch "^(ftp-config|.env|config|secrets|credentials).(json|env|txt)$">
+  Order allow,deny
+  Deny from all
+</FilesMatch>
